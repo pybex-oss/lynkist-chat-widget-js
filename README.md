@@ -235,4 +235,10 @@ npm run typecheck && npm run lint && npm test
 npm run build
 ```
 
-Publish: bump `version` and `CHANGELOG.md`, then `npm publish` (runs every check first).
+Release: bump `version` in `package.json`, add its section to `CHANGELOG.md`, commit, then push a tag:
+
+```bash
+git tag v0.3.0 && git push origin main v0.3.0
+```
+
+The Release workflow checks that the tag matches `package.json`, runs every check, publishes to npm with provenance (npm trusted publishing, no token) and makes a GitHub release from the CHANGELOG section.

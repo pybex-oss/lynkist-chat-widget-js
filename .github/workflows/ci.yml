@@ -5,8 +5,38 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   check:
+    name: check (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - run: npm pack --dry-run
+
+  # What a user gets from npm: the packed tarball, installed into an empty
+  # project, with both entry points loaded as ESM and as CommonJS.
+  install:
+    name: install the packed package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,8 +45,37 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
-      - run: npm run build
-      - run: npm pack --dry-run
+      - name: Pack
+        run: |
+          # Into its own folder: "prepare" builds during pack and prints to
+          # stdout, so the file name cannot be read from the output.
+          mkdir -p "$RUNNER_TEMP/pkg"
+          npm pack --pack-destination "$RUNNER_TEMP/pkg" > /dev/null
+          echo "TARBALL=$(ls "$RUNNER_TEMP"/pkg/*.tgz)" >> "$GITHUB_ENV"
+      - name: Install into an empty project
+        working-directory: ${{ runner.temp }}
+        run: |
+          mkdir consumer && cd consumer
+          npm init -y > /dev/null
+          npm install --no-audit --no-fund "$TARBALL" react@18
+      - name: Load every entry point
+        working-directory: ${{ runner.temp }}/consumer
+        run: |
+          node --input-type=module -e "
+            import { loadLynkistChat, getLynkistChat } from '@lynkist/chat-widget'
+            import { LynkistChat, useHideChat, useChatOffset } from '@lynkist/chat-widget/react'
+            for (const f of [loadLynkistChat, getLynkistChat, LynkistChat, useHideChat, useChatOffset]) {
+              if (typeof f !== 'function') throw new Error('missing ESM export')
+            }
+            // Server rendering: no window, every call must be a no-op.
+            loadLynkistChat({ widgetKey: 'wk_ciCheck12345' }).open()
+            console.log('ESM ok')
+          "
+          node -e "
+            const core = require('@lynkist/chat-widget')
+            const react = require('@lynkist/chat-widget/react')
+            if (typeof core.loadLynkistChat !== 'function' || typeof react.LynkistChat !== 'function') {
+              throw new Error('missing CommonJS export')
+            }
+            console.log('CommonJS ok')
+          "
