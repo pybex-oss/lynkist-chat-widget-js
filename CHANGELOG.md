@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1
+
+- First release built and published by GitHub Actions, with npm provenance (npm trusted publishing): each version links to the commit and the workflow run that built it. No change to the code.
+- README: how a release is made (a version tag).
+
 ## 0.2.0
 
 - `offset({ bottom })` lifts the launcher above a bar at the bottom of the page (a cookie banner, a sticky cart); `offset(null)` resets. React: `useChatOffset(px)`, `requestOffset(px)` and the `offsetBottom` prop; the largest request wins. The CSS variable `--lynkist-chat-offset-bottom` (`OFFSET_VARIABLE`) does the same without code.

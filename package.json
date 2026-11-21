@@ -1,6 +1,6 @@
 {
   "name": "@lynkist/chat-widget",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Lynkist Website Chat for any site: a typed loader and JavaScript API, with React bindings.",
   "license": "MIT",
   "author": "Pybex Technology Private Limited",
