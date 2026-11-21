@@ -241,4 +241,4 @@ Release: bump `version` in `package.json`, add its section to `CHANGELOG.md`, co
 git tag v0.3.0 && git push origin main v0.3.0
 ```
 
-The Release workflow checks that the tag matches `package.json`, runs every check, publishes to npm with provenance (npm trusted publishing, no token) and makes a GitHub release from the CHANGELOG section.
+The Release workflow checks that the tag matches `package.json`, runs every check, stages the version on npm with provenance (npm trusted publishing, no token) and makes a GitHub release from the CHANGELOG section. A maintainer then approves the staged version on npmjs.com (Staged Packages) with 2FA; only then is it public.

@@ -8,6 +8,11 @@
 # (package → Settings → Trusted publishing → GitHub Actions:
 # pybex-oss / lynkist-chat-widget-js / release.yml). Each version gets a
 # provenance statement that links it to this commit and this run.
+#
+# The trusted publisher has the "npm stage publish" permission only, so the
+# workflow STAGES the version: a maintainer then approves it on npmjs.com
+# (Staged Packages) with their passkey, and only then is it public. A plain
+# `npm publish` from here is refused (403, "OIDC permission denied").
 name: Release
 
 on:
@@ -34,8 +39,8 @@ jobs:
           node-version: 24
           registry-url: https://registry.npmjs.org
           cache: npm
-      # Trusted publishing needs npm 11.5.1 or later.
-      - run: npm install -g npm@^11.5.1
+      # Trusted publishing needs npm 11.5.1 or later; `npm stage` 11.21 or later.
+      - run: npm install -g npm@^11.21.0
       - name: The tag must match package.json
         run: |
           VERSION="$(node -p "require('./package.json').version")"
@@ -52,7 +57,7 @@ jobs:
           fi
       - run: npm ci
       # prepublishOnly runs typecheck, lint, test and build first.
-      - run: npm publish --provenance --access public
+      - run: npm stage publish --provenance --access public
       - name: GitHub release from the CHANGELOG section
         env:
           GH_TOKEN: ${{ github.token }}
@@ -62,4 +67,5 @@ jobs:
             /^## / && on { exit }
             on { print }
           ' CHANGELOG.md > release-notes.md
+          printf '\n_On npm after a maintainer approves the staged version._\n' >> release-notes.md
           gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file release-notes.md --verify-tag
